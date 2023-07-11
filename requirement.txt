@@ -3,3 +3,6 @@ numpy==1.23.5
 Pillow==9.3.0
 tqdm==4.64.1
 wandb==0.13.5
+opencv-python==4.8.0.74
+numba==0.57.1
+hausdorff==0.2.6
