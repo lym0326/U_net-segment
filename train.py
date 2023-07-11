@@ -14,15 +14,11 @@ from pathlib import Path
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
-# from unet.resunet import ResUnet
-# from unet.unetplusplus import ResUnetPlusPlus
 import wandb
 from evaluate import evaluate
-# from unet import UNet
 from unet.unetplusplus import NestedUNet
 from utils.data_loading import BasicDataset_train, CarvanaDataset_train, BasicDataset_val, CarvanaDataset_val
 from utils.dice_score import dice_loss, diceCoeffv2
-# from unet.transunet import TransUNet
 dir_img_train = Path('./data/imgs_train/')
 dir_mask_train = Path('./data/masks_train/')
 dir_img_val = Path('./data/imgs_val/')
@@ -35,13 +31,13 @@ def train_model(
         device,
         epochs: int = 100,
         batch_size: int = 32,
-        learning_rate: float = 3e-5,
+        learning_rate: float = 2.5e-5,
 
         save_checkpoint: bool = True,
         img_scale: float = 1.0,
         amp: bool = False,
-        weight_decay: float = 1e-8,
-        momentum: float = 0.999,
+        weight_decay: float = 2.5e-8,
+        momentum: float = 0.9,
         gradient_clipping: float = 1.0,
 ):
     # 1. Create dataset
@@ -140,13 +136,6 @@ def train_model(
                 if division_step > 0:
                     if global_step % division_step == 0:
                         histograms = {}
-                        for tag, value in model.named_parameters():
-                            tag = tag.replace('/', '.')
-                            if not (torch.isinf(value) | torch.isnan(value)).any():
-                                histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                            if not (torch.isinf(value.grad) | torch.isnan(value.grad)).any():
-                                histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
-
                         val_score = evaluate(model, val_loader, device, amp)
                         scheduler.step(val_score)
 
@@ -197,7 +186,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=100, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=32, help='Batch size')
-    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=3e-5,
+    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=2.5e-5,
                         help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
     parser.add_argument('--scale', '-s', type=float, default=1.0, help='Downscaling factor of the images')
