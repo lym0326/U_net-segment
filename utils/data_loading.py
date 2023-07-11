@@ -11,6 +11,10 @@ from os.path import splitext, isfile, join
 from pathlib import Path
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import os
+import random
+from PIL import ImageEnhance
+import cv2
 
 
 def load_image(filename):
@@ -20,12 +24,30 @@ def load_image(filename):
     elif ext in ['.pt', '.pth']:
         return Image.fromarray(torch.load(filename).numpy())
     else:
-        return Image.open(filename)
+        image = Image.open(filename)
+        enhancer = ImageEnhance.Brightness(image)
+        image = enhancer.enhance(random.uniform(0.90, 1.10))  # 随机亮度调整
+        # enhancer = ImageEnhance.Contrast(image)
+        # image = enhancer.enhance(random.uniform(0.95, 1.05))  # 随机对比度调整
 
+        # # 添加高斯噪声
+        # mean = 0
+        # stddev = random.uniform(0, 0.05)
+        # noisy_image = np.array(image) + np.random.normal(mean, stddev, np.array(image).shape).astype(np.uint8)
+        # image = Image.fromarray(noisy_image)
+        return image
+def load_mask(filename):
+    ext = splitext(filename)[1]
+    if ext == '.npy':
+        return Image.fromarray(np.load(filename))
+    elif ext in ['.pt', '.pth']:
+        return Image.fromarray(torch.load(filename).numpy())
+    else:
+        return Image.open(filename)
 
 def unique_mask_values(idx, mask_dir, mask_suffix):
     mask_file = list(mask_dir.glob(idx + mask_suffix + '.*'))[0]
-    img = load_image(mask_file)
+    img = load_mask(mask_file)
     img = img.convert('RGB')
 
     mask = np.asarray(img)
@@ -103,11 +125,19 @@ class BasicDataset_train(Dataset):
 
         assert len(img_file) == 1, f'Either no image or multiple images found for the ID {name}: {img_file}'
         assert len(mask_file) == 1, f'Either no mask or multiple masks found for the ID {name}: {mask_file}'
-        mask = load_image(mask_file[0])
-        mask = mask.convert("RGB")
+        
+        x = random.randint(18, 22)
+        y = random.randint(18, 22)
+        
+        
+        mask = load_mask(mask_file[0])
+        mask = mask.convert("L")
         img = load_image(img_file[0])
+        img = img.convert("L")
+        img = img.crop((x, y, x + 256, y + 256))
+        mask = mask.crop((x, y, x + 256, y + 256))
+        mask = mask.convert("RGB")
         img = img.convert("RGB")
-
         assert img.size == mask.size, \
             f'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
@@ -192,9 +222,9 @@ class BasicDataset_val(Dataset):
 
         assert len(img_file) == 1, f'Either no image or multiple images found for the ID {name}: {img_file}'
         assert len(mask_file) == 1, f'Either no mask or multiple masks found for the ID {name}: {mask_file}'
-        mask = load_image(mask_file[0])
+        mask = load_mask(mask_file[0])
         mask = mask.convert("RGB")
-        img = load_image(img_file[0])
+        img = load_mask(img_file[0])
         img = img.convert("RGB")
 
         assert img.size == mask.size, \
