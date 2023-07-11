@@ -113,7 +113,7 @@ class UNet(nn.Module):
         return output
 
 
-class DF-Unet(nn.Module):
+class DF-Unetplus(nn.Module):
     def __init__(self, n_classes=4, n_channels=3, deep_supervision=False, bilinear=False,**kwargs):
         super().__init__()
         self.n_channels = n_channels
